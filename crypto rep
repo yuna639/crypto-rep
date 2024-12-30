@@ -1,0 +1,83 @@
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+import requests
+
+# Function to fetch cryptocurrency data (example using CoinGecko API)
+def fetch_crypto_data(coin_id='bitcoin', days='30'):
+    url = f'https://api.coingecko.com/api/v3/coins/{coin_id}/market_chart?vs_currency=usd&days={days}'
+    response = requests.get(url)
+    data = response.json()
+    return data
+
+# Function to process the data
+def process_data(data):
+    prices = data['prices']
+    df = pd.DataFrame(prices, columns=['timestamp', 'price'])
+    df['timestamp'] = pd.to_datetime(df['timestamp'], unit='ms')
+    df['date'] = df['timestamp'].dt.date
+    return df
+
+# Function to analyze the data
+def analyze_data(df):
+    daily_transactions = df.groupby('date').size()
+    return daily_transactions
+
+# Function to visualize the data
+def plot_data(daily_transactions):
+    plt.figure(figsize=(10, 6))
+    daily_transactions.plot(kind='bar', color='skyblue')
+    plt.xlabel('Date')
+    plt.ylabel('Number of Transactions')
+    plt.title('Daily Number of Transactions')
+    plt.show()
+
+# Bot-like interaction function
+def bot_response(user_input, df, daily_transactions):
+    user_input = user_input.lower()
+    
+    if 'mean price' in user_input:
+        mean_price = df['price'].mean()
+        return f"The mean price is ${mean_price:.2f}."
+    elif 'median price' in user_input:
+        median_price = df['price'].median()
+        return f"The median price is ${median_price:.2f}."
+    elif 'std deviation price' in user_input:
+        std_dev_price = df['price'].std()
+        return f"The standard deviation of prices is ${std_dev_price:.2f}."
+    elif 'number of transactions' in user_input:
+        return daily_transactions.to_string()
+    elif 'plot transactions' in user_input:
+        plot_data(daily_transactions)
+        return "Here is the daily number of transactions plot."
+    else:
+        return "I can provide information on 'mean price', 'median price', 'std deviation price', 'number of transactions', or 'plot transactions'."
+
+# Main function to run the analysis and interactive bot
+def main():
+    coin_id = 'bitcoin'
+    days = '30'
+    
+    # Fetch the data
+    data = fetch_crypto_data(coin_id, days)
+    
+    # Process the data
+    df = process_data(data)
+    
+    # Analyze the data
+    daily_transactions = analyze_data(df)
+    
+    # Interactive bot loop
+    print("Welcome to the Crypto Data Bot! Ask me questions about the dataset.")
+    print("Type 'exit' to quit.")
+    
+    while True:
+        user_input = input("You: ")
+        if user_input.lower() == 'exit':
+            print("Goodbye!")
+            break
+        response = bot_response(user_input, df, daily_transactions)
+        print("Bot:", response)
+
+if __name__ == "__main__":
+    main()
